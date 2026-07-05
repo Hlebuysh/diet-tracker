@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Диета · Рецепты · Тренировки</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --bg:#faf7f2; --card:#ffffff; --ink:#2c2620; --muted:#8a8175;
+    --accent:#c8531f; --accent2:#e8a12a; --line:#ece5da; --good:#3f8f4f; --bad:#c0392b;
+    --shadow:0 2px 10px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.5 -apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:linear-gradient(120deg,var(--accent),var(--accent2));color:#fff;padding:18px 20px}
+  header h1{margin:0;font-size:20px;letter-spacing:.2px}
+  header p{margin:4px 0 0;opacity:.9;font-size:13px}
+  .tabs{display:flex;gap:6px;background:#fff;padding:8px 12px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+  .tabs button{border:0;background:#f1ebe1;color:var(--ink);padding:9px 16px;border-radius:20px;cursor:pointer;font-weight:600;font-size:14px}
+  .tabs button.active{background:var(--accent);color:#fff}
+  main{max-width:960px;margin:0 auto;padding:18px}
+  .filters{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow);display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+  .filters label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600}
+  select,input,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:9px;font:inherit;background:#fff;color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+  .rc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow);cursor:pointer;transition:transform .12s;display:flex;flex-direction:column;gap:8px}
+  .rc:hover{transform:translateY(-3px)}
+  .rc.cool{opacity:.55}
+  .rc h3{margin:0;font-size:16px}
+  .rc .meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px}
+  .chip{background:#f4efe6;border-radius:20px;padding:2px 9px;font-size:11px;color:#6b6255}
+  .chip.reg{background:#efe3d2;color:#8a5a22}
+  .rate{font-weight:700;color:var(--accent)}
+  .appr{color:var(--good);font-size:12px;font-weight:700}
+  .tags{display:flex;flex-wrap:wrap;gap:5px}
+  .empty{color:var(--muted);text-align:center;padding:40px}
+  /* modal */
+  .modal{position:fixed;inset:0;background:rgba(20,15,10,.55);display:none;align-items:flex-start;justify-content:center;padding:20px;z-index:20;overflow:auto}
+  .modal.open{display:flex}
+  .sheet{background:#fff;border-radius:16px;max-width:640px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .sheet h2{margin:0 0 4px}
+  .sheet .close{float:right;border:0;background:#f1ebe1;border-radius:50%;width:34px;height:34px;font-size:18px;cursor:pointer}
+  .macros{display:flex;gap:14px;flex-wrap:wrap;margin:12px 0;font-size:13px}
+  .macros b{color:var(--accent)}
+  .scaler{display:flex;align-items:center;gap:10px;background:#faf5ee;border-radius:12px;padding:10px 12px;margin:12px 0}
+  .scaler input{width:70px;text-align:center}
+  ul.ing{list-style:none;padding:0;margin:10px 0}
+  ul.ing li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line)}
+  ul.ing li .q{color:var(--accent);font-weight:600;white-space:nowrap;margin-left:12px}
+  ol.steps{padding-left:20px;margin:10px 0}
+  ol.steps li{margin-bottom:7px}
+  .ratebar{display:flex;gap:4px;flex-wrap:wrap;margin:10px 0}
+  .ratebar button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:700}
+  .ratebar button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn{border:0;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:14px}
+  .btn.p{background:var(--accent);color:#fff}
+  .btn.g{background:var(--good);color:#fff}
+  .btn.s{background:#f1ebe1;color:var(--ink)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+  /* calories */
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
+  .bar{height:22px;background:#f1ebe1;border-radius:12px;overflow:hidden;margin:10px 0}
+  .bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--good),var(--accent2));width:0;transition:width .3s}
+  .bar.over>span{background:linear-gradient(90deg,var(--accent),var(--bad))}
+  .log li{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+  .log li button{border:0;background:transparent;color:var(--bad);cursor:pointer;font-size:16px}
+  .addrow{display:grid;grid-template-columns:1fr 90px 90px 44px;gap:8px;margin-top:12px}
+  .big{font-size:26px;font-weight:800}
+  .sub{color:var(--muted);font-size:13px}
+  /* workouts */
+  .wday{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:#fff}
+  .wday.done{background:#eef6ef;border-color:#cfe6d3}
+  .wday input{width:22px;height:22px}
+  .wday .d{font-weight:700;width:34px;color:var(--accent)}
+  .wday .t{flex:1}
+  .wday .t small{color:var(--muted)}
+  .streak{font-size:14px;color:var(--muted)}
+  /* shopping */
+  .grp{font-weight:800;margin:18px 0 2px;color:var(--accent);font-size:15px}
+  .chk{display:flex;align-items:center;gap:11px;padding:9px 2px;border-bottom:1px solid var(--line)}
+  .chk input{width:20px;height:20px;flex:none}
+  .chk.done label{text-decoration:line-through;color:var(--muted)}
+  .chk label{flex:1;cursor:pointer}
+  @media(max-width:560px){.addrow{grid-template-columns:1fr 1fr;}.addrow button{grid-column:span 2}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🍗 Диета · Рецепты · Тренировки</h1>
+  <p>Профиль: М, 23 г., 90 кг / 168 см · цель 1900 ккал/день · белок ~160 г · всё сохраняется в браузере</p>
+</header>
+
+<div class="tabs">
+  <button data-tab="recipes" class="active">📖 Рецепты</button>
+  <button data-tab="plan">🗓 План недели</button>
+  <button data-tab="shop">🛒 Покупки</button>
+  <button data-tab="cal">🔥 Калории</button>
+  <button data-tab="work">🏋️ Тренировки</button>
+</div>
+
+<main>
+  <!-- ================= RECIPES ================= -->
+  <section id="recipes">
+    <div class="filters">
+      <div><label>Регион / страна</label><select id="fReg"></select></div>
+      <div><label>Ингредиент</label><select id="fIng"></select></div>
+      <div><label>Время ≤ (мин)</label><select id="fTime">
+        <option value="999">Любое</option><option value="20">20</option>
+        <option value="30">30</option><option value="45">45</option></select></div>
+      <div><label>Оценка ≥</label><select id="fRate">
+        <option value="0">Любая</option><option value="6">6</option>
+        <option value="7">7</option><option value="8">8</option><option value="9">9</option></select></div>
+      <div><label>Острота ≤</label><select id="fSpice">
+        <option value="3">Любая</option><option value="0">0 (не остро)</option>
+        <option value="1">1</option><option value="2">2 (средне)</option></select></div>
+      <div><label>Показывать</label><select id="fAppr">
+        <option value="all">Все</option><option value="appr">Только одобренные ✓</option>
+        <option value="unrated">Ещё не оценённые</option></select></div>
+    </div>
+    <div class="row" style="margin:-6px 0 14px">
+      <button class="btn s" id="addRecipeBtn">➕ Добавить свой рецепт</button>
+      <span class="sub" id="recCount"></span>
+    </div>
+    <div class="grid" id="recipeGrid"></div>
+  </section>
+
+  <!-- ================= CALORIES ================= -->
+  <section id="cal" style="display:none">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between">
+        <div><div class="sub">Дата</div><input type="date" id="calDate" style="width:170px"></div>
+        <div style="text-align:right"><div class="sub">Цель (ккал)</div><input type="number" id="calTarget" value="1900" style="width:110px;text-align:right"></div>
+      </div>
+      <div class="bar" id="calBar"><span></span></div>
+      <div class="row" style="justify-content:space-between;align-items:flex-end">
+        <div><span class="big" id="calNow">0</span> <span class="sub">/ <span id="calGoal">1900</span> ккал</span></div>
+        <div style="text-align:right"><span class="big" id="calLeft">1900</span><div class="sub">осталось</div></div>
+        <div style="text-align:right"><span class="big" id="calProt">0</span><div class="sub">белок, г (цель 160)</div></div>
+      </div>
+      <ul class="log" id="calLog"></ul>
+      <div class="addrow">
+        <input id="fName" placeholder="Что съел">
+        <input id="fKcal" type="number" placeholder="ккал">
+        <input id="fProt" type="number" placeholder="белок">
+        <button class="btn p" id="calAdd">+</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= WORKOUTS ================= -->
+  <section id="work" style="display:none">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between">
+        <div><b>Неделя:</b> <span id="weekLabel"></span></div>
+        <span class="streak">Всего тренировок: <b id="totalW">0</b></span>
+      </div>
+      <div id="workDays" style="margin-top:14px"></div>
+      <div class="sub" style="margin-top:10px">Разминка 5 мин → основа 30–35 мин → заминка 5 мин. Пт–Вс: отдых или прогулка 30–40 мин.</div>
+    </div>
+  </section>
+
+  <!-- ================= MEAL PLAN ================= -->
+  <section id="plan" style="display:none">
+    <div class="panel">
+      <b>🗓 План готовки на неделю</b>
+      <div class="sub" style="margin:6px 0 0">Готовишь вечером <b>2 порции</b>: ужин сегодня + обед завтра. Каждый день — новое блюдо, повтор не раньше чем через 2 недели. Нажми на день, чтобы открыть рецепт и отметить «Приготовил».</div>
+    </div>
+    <div id="planList"></div>
+  </section>
+
+  <!-- ================= SHOPPING ================= -->
+  <section id="shop" style="display:none">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between">
+        <div><b>🛒 Закупка и заготовки на неделю</b><div class="sub" id="shopProg">0 / 0 отмечено</div></div>
+        <button class="btn s" id="shopReset">Сбросить галочки</button>
+      </div>
+      <div id="shopList"></div>
+    </div>
+  </section>
+</main>
+
+<!-- recipe modal -->
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+
+<script>
+/* ---------------- SEED RECIPES ---------------- */
+const RECIPES = [
+ {id:"general-tso",name:"Курица Генерала Цо (лайт)",emoji:"🍗",region:"Китай",time:30,base:4,spice:2,kcal:430,prot:42,mealprep:true,rating:8,approved:true,
+  tags:["курица","рис","соевый соус","чеснок","имбирь"],
+  ing:[["Куриное филе",700,"г"],["Соевый соус",6,"ст.л"],["Вода",100,"мл"],["Сахар",2,"ст.л"],["Рисовый уксус",3,"ст.л"],["Томатная паста",1,"ст.л"],["Крахмал",2,"ч.л"],["Чеснок",3,"зуб."],["Имбирь молотый",0.5,"ч.л"],["Чили молотый",0.5,"ч.л"],["Масло растит.",1,"ст.л"],["Рис отварной",600,"г"]],
+  steps:["Нарезать филе кусочками, замариновать в 1,5 ст.л соевого + 1 ч.л крахмала 10 мин.","Запечь на пергаменте 210°C 12–15 мин (без панировки).","Соус: остаток соевого, воду, сахар, уксус, томат, имбирь, чили, 1 ч.л крахмала смешать.","Обжарить чеснок 20 сек, влить соус, уварить до глянца 2–3 мин.","Забросить курицу, перемешать 20 сек. Подать с рисом и овощами."]},
+
+ {id:"pad-krapow",name:"Пад Кра Пао (курица с базиликом)",emoji:"🌶",region:"Таиланд",time:20,base:3,spice:3,kcal:400,prot:38,mealprep:true,rating:0,approved:false,
+  tags:["курица","рис","чеснок","чили","базилик"],
+  ing:[["Куриное филе/фарш",500,"г"],["Чеснок",4,"зуб."],["Чили",2,"шт"],["Устричный соус",2,"ст.л"],["Соевый соус",1,"ст.л"],["Сахар",1,"ч.л"],["Базилик",1,"пучок"],["Масло растит.",1,"ст.л"],["Рис отварной",450,"г"]],
+  steps:["Мелко порубить курицу, чеснок и чили.","Обжарить чеснок+чили 20 сек на сильном огне.","Добавить курицу, жарить до готовности.","Влить соусы+сахар, перемешать 1 мин.","Снять с огня, вмешать базилик. Подать с рисом."]},
+
+ {id:"chicken-curry",name:"Курица карри на йогурте (лайт)",emoji:"🇮🇳",region:"Индия",time:35,base:4,spice:2,kcal:420,prot:40,mealprep:true,rating:0,approved:false,
+  tags:["курица","рис","томаты","йогурт","чеснок","имбирь"],
+  ing:[["Куриное филе",700,"г"],["Лук",1,"шт"],["Чеснок",3,"зуб."],["Имбирь тёртый",1,"ч.л"],["Томаты (пюре)",400,"г"],["Гарам масала / карри",2,"ст.л"],["Йогурт греческий",150,"г"],["Масло растит.",1,"ст.л"],["Рис отварной",600,"г"]],
+  steps:["Обжарить лук, чеснок, имбирь до мягкости.","Добавить специи, прогреть 30 сек.","Ввести томаты, тушить 5 мин.","Добавить курицу кусочками, тушить 12–15 мин.","Снять с огня, вмешать йогурт (не кипятить). Подать с рисом."]},
+
+ {id:"mexican-bowl",name:"Мексиканский боул с курицей",emoji:"🌯",region:"Мексика",time:25,base:4,spice:2,kcal:440,prot:40,mealprep:true,rating:0,approved:false,
+  tags:["курица","рис","фасоль","кукуруза","йогурт"],
+  ing:[["Куриное филе",600,"г"],["Паприка",1,"ст.л"],["Кумин",1,"ч.л"],["Чеснок",2,"зуб."],["Чили молотый",0.5,"ч.л"],["Рис отварной",500,"г"],["Кукуруза",150,"г"],["Фасоль варёная",200,"г"],["Йогурт греческий",100,"г"],["Лайм",1,"шт"]],
+  steps:["Курицу натереть специями+чесноком, обжарить до готовности.","Нарезать соломкой.","В миску: рис, фасоль, кукуруза, курица.","Полить йогуртом и соком лайма.","Собирается тёплым или холодным — удобно на работу."]},
+
+ {id:"teriyaki",name:"Курица терияки",emoji:"🇯🇵",region:"Япония",time:25,base:4,spice:0,kcal:450,prot:40,mealprep:true,rating:0,approved:false,
+  tags:["курица","рис","соевый соус","кунжут","имбирь"],
+  ing:[["Куриное филе",700,"г"],["Соевый соус",4,"ст.л"],["Вода",3,"ст.л"],["Сахар",2,"ст.л"],["Чеснок",2,"зуб."],["Имбирь молотый",0.5,"ч.л"],["Крахмал",1,"ч.л"],["Кунжут",1,"ст.л"],["Рис отварной",600,"г"]],
+  steps:["Обжарить курицу кусочками до румяности.","Смешать соевый, воду, сахар, чеснок, имбирь, крахмал.","Влить соус, уварить до глянца 2–3 мин.","Посыпать кунжутом. Подать с рисом и овощами."]},
+
+ {id:"shawarma-bowl",name:"Шаурма-боул с курицей",emoji:"🥙",region:"Ближний Восток",time:30,base:4,spice:1,kcal:430,prot:42,mealprep:true,rating:0,approved:false,
+  tags:["курица","йогурт","чеснок","овощи","лаваш"],
+  ing:[["Куриное филе",700,"г"],["Йогурт греческий (маринад)",150,"г"],["Чеснок",3,"зуб."],["Паприка",1,"ст.л"],["Кумин",1,"ч.л"],["Куркума",0.5,"ч.л"],["Лимон",0.5,"шт"],["Овощи (помидор/огурец/капуста)",300,"г"],["Лаваш или рис",400,"г"]],
+  steps:["Замариновать курицу в йогурте+специях+чесноке 20 мин (можно с вечера).","Обжарить или запечь до готовности, нарезать.","Собрать боул: основа, курица, свежие овощи.","Полить йогуртовым соусом с лимоном."]},
+
+ {id:"sesame-chicken",name:"Кунжутная курица (лайт)",emoji:"🍯",region:"Китай",time:30,base:4,spice:1,kcal:440,prot:40,mealprep:true,rating:0,approved:false,
+  tags:["курица","рис","соевый соус","кунжут","чеснок"],
+  ing:[["Куриное филе",700,"г"],["Соевый соус",4,"ст.л"],["Мёд",1.5,"ст.л"],["Рисовый уксус",2,"ст.л"],["Чеснок",3,"зуб."],["Крахмал",1,"ч.л"],["Кунжут",2,"ст.л"],["Масло растит.",1,"ст.л"],["Рис отварной",600,"г"]],
+  steps:["Обжарить курицу кусочками до румяности.","Смешать соевый, мёд, уксус, чеснок, крахмал.","Влить, уварить в липкий соус 2–3 мин.","Обильно посыпать кунжутом. Подать с рисом."]},
+
+ {id:"fajitas",name:"Фахитас с курицей",emoji:"🫓",region:"Мексика",time:25,base:4,spice:1,kcal:420,prot:40,mealprep:true,rating:0,approved:false,
+  tags:["курица","перец","лук","тортилья","паприка"],
+  ing:[["Куриное филе",600,"г"],["Перец болгарский",2,"шт"],["Лук",1,"шт"],["Паприка",1,"ст.л"],["Кумин",1,"ч.л"],["Чеснок",2,"зуб."],["Масло растит.",1,"ст.л"],["Тортилья/лаваш",4,"шт"]],
+  steps:["Курицу и овощи нарезать соломкой.","Обжарить курицу со специями до готовности.","Добавить перец и лук, жарить 4–5 мин (хрусткими).","Завернуть в тортилью или подать с рисом."]},
+
+ {id:"tandoori",name:"Курица тандури (духовка)",emoji:"🔥",region:"Индия",time:40,base:4,spice:2,kcal:400,prot:44,mealprep:true,rating:0,approved:false,
+  tags:["курица","йогурт","чеснок","имбирь","специи"],
+  ing:[["Куриное филе/голень",800,"г"],["Йогурт греческий",200,"г"],["Чеснок",4,"зуб."],["Имбирь тёртый",1,"ч.л"],["Паприка",1,"ст.л"],["Гарам масала",1,"ст.л"],["Куркума",0.5,"ч.л"],["Лимон",0.5,"шт"]],
+  steps:["Смешать маринад: йогурт, чеснок, имбирь, специи, лимон.","Замариновать курицу 30 мин – ночь.","Запечь 200°C 25–30 мин до румяной корочки.","Подать с рисом/овощами и йогуртовым соусом."]},
+
+ {id:"gyros-bowl",name:"Гирос-боул (греческий)",emoji:"🇬🇷",region:"Греция",time:30,base:4,spice:1,kcal:430,prot:42,mealprep:true,rating:0,approved:false,
+  tags:["курица","йогурт","огурец","чеснок","овощи"],
+  ing:[["Куриное филе",700,"г"],["Орегано",1,"ст.л"],["Чеснок",3,"зуб."],["Лимон",0.5,"шт"],["Масло растит.",1,"ст.л"],["Йогурт греческий (дзадзики)",200,"г"],["Огурец",1,"шт"],["Овощи+рис/лаваш",400,"г"]],
+  steps:["Замариновать курицу в орегано, чесноке, лимоне, масле.","Обжарить/запечь до готовности, нарезать.","Дзадзики: йогурт + тёртый огурец + чеснок.","Собрать боул с овощами и соусом."]},
+
+ {id:"bulgogi",name:"Говядина булгоги (лайт)",emoji:"🇰🇷",region:"Корея",time:30,base:4,spice:1,kcal:480,prot:38,mealprep:true,rating:0,approved:false,
+  tags:["говядина","рис","соевый соус","чеснок","кунжут"],
+  ing:[["Говядина тонко нарезанная",600,"г"],["Соевый соус",4,"ст.л"],["Сахар",1.5,"ст.л"],["Чеснок",3,"зуб."],["Кунжутное масло",1,"ст.л"],["Кунжут",1,"ст.л"],["Зелёный лук",2,"шт"],["Рис отварной",600,"г"]],
+  steps:["Замариновать говядину в соевом, сахаре, чесноке, масле 20 мин.","Обжарить на сильном огне 3–4 мин.","Посыпать кунжутом и зелёным луком.","Подать с рисом (для разнообразия вместо курицы)."]},
+
+ {id:"kung-pao",name:"Курица Кунг-Пао (лайт)",emoji:"🥜",region:"Китай",time:25,base:4,spice:3,kcal:430,prot:40,mealprep:true,rating:0,approved:false,
+  tags:["курица","рис","арахис","чили","чеснок"],
+  ing:[["Куриное филе",600,"г"],["Арахис",50,"г"],["Соевый соус",3,"ст.л"],["Рисовый уксус",1,"ст.л"],["Сахар",1,"ч.л"],["Чеснок",3,"зуб."],["Чили сушёный",3,"шт"],["Крахмал",1,"ч.л"],["Рис отварной",600,"г"]],
+  steps:["Обжарить курицу кусочками до готовности.","Добавить чеснок и чили, 30 сек.","Влить соус (соевый+уксус+сахар+крахмал), уварить.","Вмешать арахис. Подать с рисом. (⚠️ арахис ≠ миндаль — ок)"]}
+];
+
+/* ---------------- STATE / STORAGE ---------------- */
+const TG = window.Telegram && window.Telegram.WebApp;
+const IN_TG = !!(TG && TG.platform && TG.platform !== "unknown");   // реально открыто внутри Telegram
+const CS = (IN_TG && TG.isVersionAtLeast && TG.isVersionAtLeast("6.9") && TG.CloudStorage && TG.CloudStorage.getItem) ? TG.CloudStorage : null;
+const LS = {
+  get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},
+  set(k,v){
+    const s=JSON.stringify(v);
+    localStorage.setItem(k,s);
+    if(CS){ try{ CS.setItem(k,s); }catch(e){} }   // зеркалим в облако Telegram
+  }
+};
+let meta = LS.get("recipeMeta",{});          // {id:{rating,approved}}
+let customs = LS.get("customRecipes",[]);     // user-added
+function allRecipes(){
+  return RECIPES.concat(customs).map(r=>{
+    const m = meta[r.id]||{};
+    return {...r, rating: m.rating??r.rating??0, approved: m.approved??r.approved??false};
+  });
+}
+function saveMeta(id,patch){ meta[id]={...(meta[id]||{}),...patch}; LS.set("recipeMeta",meta); }
+const DAY=86400000, COOLDOWN=14;
+function cooldownLeft(id){ const c=(meta[id]||{}).cookedAt; if(!c) return 0; const left=COOLDOWN-Math.floor((Date.now()-c)/DAY); return left>0?left:0; }
+function markCooked(id){ saveMeta(id,{cookedAt:Date.now()}); }
+window.markCookedUI=(id)=>{ markCooked(id); openRecipe(id); renderRecipes(); };
+
+/* ---------------- TABS ---------------- */
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  ["recipes","plan","shop","cal","work"].forEach(id=>document.getElementById(id).style.display="none");
+  document.getElementById(b.dataset.tab).style.display="block";
+  if(b.dataset.tab==="cal") renderCal();
+  if(b.dataset.tab==="work") renderWork();
+  if(b.dataset.tab==="plan") renderPlan();
+  if(b.dataset.tab==="shop") renderShop();
+});
+
+/* ---------------- RECIPES ---------------- */
+function initFilters(){
+  const regs=[...new Set(allRecipes().map(r=>r.region))].sort();
+  const ings=[...new Set(allRecipes().flatMap(r=>r.tags))].sort();
+  document.getElementById("fReg").innerHTML="<option value=''>Все регионы</option>"+regs.map(r=>`<option>${r}</option>`).join("");
+  document.getElementById("fIng").innerHTML="<option value=''>Любой ингредиент</option>"+ings.map(i=>`<option>${i}</option>`).join("");
+}
+["fReg","fIng","fTime","fRate","fSpice","fAppr"].forEach(id=>document.getElementById(id).addEventListener("change",renderRecipes));
+
+function renderRecipes(){
+  const reg=fReg.value, ing=fIng.value, t=+fTime.value, minR=+fRate.value, maxS=+fSpice.value, ap=fAppr.value;
+  let list=allRecipes().filter(r=>
+    (!reg||r.region===reg) && (!ing||r.tags.includes(ing)) &&
+    r.time<=t && r.rating>=minR && r.spice<=maxS &&
+    (ap==="all" || (ap==="appr"&&r.approved) || (ap==="unrated"&&!r.rating))
+  );
+  list.sort((a,b)=>(cooldownLeft(a.id)?1:0)-(cooldownLeft(b.id)?1:0) || (b.rating||0)-(a.rating||0));
+  document.getElementById("recCount").textContent=`Найдено: ${list.length}`;
+  const g=document.getElementById("recipeGrid");
+  if(!list.length){g.innerHTML="<div class='empty'>Ничего не найдено — ослабь фильтры.</div>";return;}
+  g.innerHTML=list.map(r=>{const cd=cooldownLeft(r.id);return `
+    <div class="rc ${cd?'cool':''}" data-id="${r.id}">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3>${r.emoji||"🍽"} ${r.name}</h3>
+        <span class="rate">${r.rating?r.rating+"/10":"—"}</span>
+      </div>
+      <div class="meta"><span class="chip reg">${r.region}</span><span class="chip">⏱ ${r.time} мин</span>
+        <span class="chip">🌶 ${r.spice}</span><span class="chip">${r.kcal} ккал</span></div>
+      <div class="tags">${r.tags.slice(0,4).map(x=>`<span class="chip">${x}</span>`).join("")}</div>
+      ${cd?`<span class="chip" style="background:#f6e0d6;color:#c8531f">⏳ снова через ${cd} дн.</span>`:''}
+      ${r.approved?'<span class="appr">✓ Одобрено</span>':''}
+    </div>`;}).join("");
+  g.querySelectorAll(".rc").forEach(c=>c.onclick=()=>openRecipe(c.dataset.id));
+}
+
+function fmtQty(q,unit){
+  if(q==null||q==="") return "по вкусу";
+  let n = (unit==="г"||unit==="мл") ? Math.round(q/5)*5 : Math.round(q*10)/10;
+  return n+" "+unit;
+}
+function openRecipe(id){
+  const r=allRecipes().find(x=>x.id===id); if(!r)return;
+  const base=r.base||1;
+  const render=(serv)=>{
+    const k=serv/base;
+    document.getElementById("sheet").innerHTML=`
+      <button class="close" onclick="closeModal()">×</button>
+      <h2>${r.emoji||"🍽"} ${r.name}</h2>
+      <div class="meta"><span class="chip reg">${r.region}</span><span class="chip">⏱ ${r.time} мин</span>
+        <span class="chip">🌶 острота ${r.spice}</span>${r.mealprep?'<span class="chip">🥡 meal prep</span>':''}</div>
+      <div class="macros"><span><b>${Math.round(r.kcal*k)}</b> ккал</span><span><b>${Math.round(r.prot*k)}</b> г белка</span><span>порций: <b>${serv}</b></span></div>
+      <div class="scaler">🍽 Порции / масштаб:
+        <button class="btn s" onclick="scale(${id?"'"+id+"'":null},${serv-1})">−</button>
+        <input type="number" min="1" value="${serv}" id="servIn" style="width:60px">
+        <button class="btn s" onclick="scale('${id}',${serv+1})">+</button>
+        <span class="sub">(× ${k.toFixed(2)} от базовых ${base})</span>
+      </div>
+      <b>Ингредиенты:</b>
+      <ul class="ing">${(r.ing||[]).map(([n,q,u])=>`<li><span>${n}</span><span class="q">${fmtQty(q==null?null:q*k,u)}</span></li>`).join("")||"<li>—</li>"}</ul>
+      <b>Приготовление:</b>
+      <ol class="steps">${(r.steps||[]).map(s=>`<li>${s}</li>`).join("")||"<li>—</li>"}</ol>
+      <b>Моя оценка:</b>
+      <div class="ratebar">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="${r.rating===n?'on':''}" onclick="rate('${id}',${n})">${n}</button>`).join("")}</div>
+      <div class="row">
+        <button class="btn ${r.approved?'g':'s'}" onclick="toggleAppr('${id}')">${r.approved?'✓ Одобрено':'Одобрить рецепт'}</button>
+        <button class="btn p" onclick="addRecipeToDiary(${Math.round(r.kcal*k)},${Math.round(r.prot*k)},'${r.name.replace(/'/g,'')}')">＋ В дневник (1 порция: ${r.kcal} ккал)</button>
+      </div>
+      <div class="row">
+        <button class="btn s" onclick="markCookedUI('${id}')">${cooldownLeft(id)?'⏳ Карантин ещё '+cooldownLeft(id)+' дн.':'🍳 Приготовил (карантин 14 дн.)'}</button>
+      </div>`;
+    document.getElementById("servIn").addEventListener("change",e=>render(Math.max(1,+e.target.value||1)));
+  };
+  window.scale=(rid,v)=>render(Math.max(1,v));
+  render(base);
+  document.getElementById("modal").classList.add("open");
+}
+window.closeModal=()=>document.getElementById("modal").classList.remove("open");
+document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal();});
+window.rate=(id,n)=>{saveMeta(id,{rating:n});openRecipe(id);renderRecipes();};
+window.toggleAppr=(id)=>{const cur=allRecipes().find(x=>x.id===id);saveMeta(id,{approved:!cur.approved});openRecipe(id);renderRecipes();};
+window.addRecipeToDiary=(kcal,prot,name)=>{
+  const d=todayKey(); const log=LS.get("cal_"+d,[]);
+  log.push({name:"🍽 "+name,kcal,prot}); LS.set("cal_"+d,log);
+  alert("Добавлено в дневник калорий на сегодня: "+kcal+" ккал");
+};
+
+/* ---- add custom recipe ---- */
+document.getElementById("addRecipeBtn").onclick=()=>{
+  document.getElementById("sheet").innerHTML=`
+    <button class="close" onclick="closeModal()">×</button>
+    <h2>➕ Свой рецепт</h2>
+    <div style="display:grid;gap:8px">
+      <div><label>Название</label><input id="cName"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div><label>Регион</label><input id="cReg" value="Своё"></div>
+        <div><label>Время, мин</label><input id="cTime" type="number" value="30"></div>
+        <div><label>Острота 0-3</label><input id="cSpice" type="number" value="1"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div><label>Ккал/порция</label><input id="cKcal" type="number" value="400"></div>
+        <div><label>Белок/порция</label><input id="cProt" type="number" value="40"></div>
+        <div><label>Порций (база)</label><input id="cBase" type="number" value="4"></div>
+      </div>
+      <div><label>Ингредиенты — по строке: <i>название; кол-во; ед.</i> (для масштаба)</label>
+        <textarea id="cIng" rows="4" placeholder="Куриное филе; 700; г&#10;Соевый соус; 4; ст.л"></textarea></div>
+      <div><label>Шаги — по строке</label><textarea id="cSteps" rows="4"></textarea></div>
+      <div><label>Теги-ингредиенты через запятую</label><input id="cTags" placeholder="курица, рис"></div>
+    </div>
+    <div class="row"><button class="btn p" onclick="saveCustom()">Сохранить</button></div>`;
+  document.getElementById("modal").classList.add("open");
+};
+window.saveCustom=()=>{
+  const v=id=>document.getElementById(id).value.trim();
+  if(!v("cName")){alert("Впиши название");return;}
+  const ing=v("cIng").split("\n").filter(Boolean).map(l=>{
+    const p=l.split(";").map(x=>x.trim());
+    return [p[0], p[1]?parseFloat(p[1]):null, p[2]||""];
+  });
+  const rec={id:"c"+Date.now(),name:v("cName"),emoji:"⭐",region:v("cReg")||"Своё",
+    time:+v("cTime")||30,base:+v("cBase")||1,spice:+v("cSpice")||0,
+    kcal:+v("cKcal")||0,prot:+v("cProt")||0,mealprep:true,rating:0,approved:false,
+    tags:v("cTags").split(",").map(x=>x.trim()).filter(Boolean),
+    ing, steps:v("cSteps").split("\n").filter(Boolean)};
+  customs.push(rec); LS.set("customRecipes",customs);
+  closeModal(); initFilters(); renderRecipes();
+};
+
+/* ---------------- CALORIES ---------------- */
+function todayKey(){const d=document.getElementById("calDate"); return (d&&d.value)||new Date().toISOString().slice(0,10);}
+document.getElementById("calDate").value=new Date().toISOString().slice(0,10);
+document.getElementById("calDate").addEventListener("change",renderCal);
+document.getElementById("calTarget").addEventListener("input",renderCal);
+document.getElementById("calAdd").onclick=()=>{
+  const n=fName.value.trim(), k=+fKcal.value, p=+fProt.value||0;
+  if(!n||!k){return;}
+  const key="cal_"+todayKey(); const log=LS.get(key,[]);
+  log.push({name:n,kcal:k,prot:p}); LS.set(key,log);
+  fName.value="";fKcal.value="";fProt.value=""; renderCal();
+};
+function renderCal(){
+  const key="cal_"+todayKey(); const log=LS.get(key,[]);
+  const goal=+document.getElementById("calTarget").value||1900;
+  const now=log.reduce((s,x)=>s+x.kcal,0), prot=log.reduce((s,x)=>s+(x.prot||0),0);
+  document.getElementById("calNow").textContent=now;
+  document.getElementById("calGoal").textContent=goal;
+  document.getElementById("calLeft").textContent=goal-now;
+  document.getElementById("calProt").textContent=prot;
+  const bar=document.getElementById("calBar"); const pct=Math.min(100,now/goal*100);
+  bar.querySelector("span").style.width=pct+"%";
+  bar.classList.toggle("over",now>goal);
+  document.getElementById("calLog").innerHTML=log.map((x,i)=>
+    `<li><span>${x.name} <span class="sub">${x.prot?'· '+x.prot+'г белка':''}</span></span>
+     <span><b>${x.kcal}</b> ккал <button onclick="delCal(${i})">🗑</button></span></li>`).join("")
+    || "<li class='sub'>Пока пусто — добавь приём пищи ниже.</li>";
+}
+window.delCal=(i)=>{const key="cal_"+todayKey();const log=LS.get(key,[]);log.splice(i,1);LS.set(key,log);renderCal();};
+
+/* ---------------- WORKOUTS ---------------- */
+const PLAN=[
+  ["Пн","Силовая A","гоблет-присед · румынская тяга · жим лёжа · тяга в наклоне · планка"],
+  ["Вт","Кардио-база","5 мин ходьба → 8×(1 мин бег / 90 сек шаг) → 5 мин ходьба"],
+  ["Ср","Силовая B","выпады · ягодичный мост · жим стоя · тяга одной рукой · бицепс/трицепс"],
+  ["Чт","Кардио-интервалы","4 круга 40/20: присед · скалолаз · выпады · шэдоу-бокс + растяжка"]
+];
+function weekKey(){const d=new Date();const y=d.getFullYear();const on=new Date(y,0,1);
+  const w=Math.ceil((((d-on)/86400000)+on.getDay()+1)/7); return y+"-W"+w;}
+function renderWork(){
+  const wk=weekKey(); const done=LS.get("work_"+wk,{});
+  document.getElementById("weekLabel").textContent=wk;
+  document.getElementById("totalW").textContent=LS.get("workTotal",0);
+  document.getElementById("workDays").innerHTML=PLAN.map((d,i)=>`
+    <label class="wday ${done[i]?'done':''}">
+      <input type="checkbox" ${done[i]?'checked':''} onchange="toggleW(${i},this.checked)">
+      <span class="d">${d[0]}</span>
+      <span class="t"><b>${d[1]}</b><br><small>${d[2]}</small></span>
+    </label>`).join("");
+}
+window.toggleW=(i,val)=>{
+  const wk=weekKey(); const done=LS.get("work_"+wk,{});
+  const was=!!done[i]; done[i]=val; LS.set("work_"+wk,done);
+  let total=LS.get("workTotal",0); total+= (val&&!was)?1:(!val&&was?-1:0);
+  LS.set("workTotal",Math.max(0,total)); renderWork();
+};
+
+/* ---------------- MEAL PLAN ---------------- */
+const MEALPLAN=[
+  {cook:"Вс",id:"teriyaki",     eat:"ужин Вс + обед Пн"},
+  {cook:"Пн",id:"chicken-curry",eat:"ужин Пн + обед Вт"},
+  {cook:"Вт",id:"pad-krapow",   eat:"ужин Вт + обед Ср"},
+  {cook:"Ср",id:"gyros-bowl",   eat:"ужин Ср + обед Чт"},
+  {cook:"Чт",id:"fajitas",      eat:"ужин Чт + обед Пт"},
+  {cook:"Пт",id:"bulgogi",      eat:"ужин Пт + обед Сб"},
+  {cook:"Сб",id:"shawarma-bowl",eat:"ужин Сб + обед Вс"}
+];
+function renderPlan(){
+  const el=document.getElementById("planList");
+  el.innerHTML=MEALPLAN.map(m=>{
+    const r=allRecipes().find(x=>x.id===m.id)||{}; const cd=cooldownLeft(m.id);
+    return `<div class="wday" data-id="${m.id}" style="cursor:pointer;opacity:${cd?0.55:1}">
+      <span class="d">${m.cook}</span>
+      <span class="t"><b>${r.emoji||'🍽'} ${r.name||m.id}</b> <span class="chip reg">${r.region||''}</span>
+        <br><small>🍽 ${m.eat} · ⏱ ${r.time||'?'} мин · ${r.kcal||'?'} ккал/порция${cd?` · <b style="color:#c8531f">⏳ карантин ${cd} дн.</b>`:''}</small></span>
+      <span class="rate">${r.rating?r.rating+'/10':'—'}</span>
+    </div>`;
+  }).join("");
+  el.querySelectorAll(".wday").forEach(c=>c.onclick=()=>openRecipe(c.dataset.id));
+}
+
+/* ---------------- SHOPPING ---------------- */
+const SHOP=[
+  ["🛒 Купить сейчас (хранится долго)",[
+    "Куриное филе — 2,5 кг (часть на Чт–Сб в морозилку)",
+    "Говядина тонко нарезанная — 500 г → в морозилку до пятницы",
+    "Яйца — 10 шт","Творог 5–9% — 400 г","Греческий йогурт — 900 г",
+    "Рис — 1 кг","Гречка/булгур — 500 г","Тортилья/лаваш — 1 уп","Хлебцы ржаные — 1 уп",
+    "Нут — 400 г","Фасоль конс. — 1 б","Кукуруза конс. — 1 б","Томаты в собств. соку — 400 г",
+    "Зёрна для попкорна — 1 уп",
+    "Лук — 3","Чеснок — 2 головки","Имбирь — 1 корень","Морковь — 500 г",
+    "Перец болгарский — 4","Капуста — небольшой кочан","Лимон/лайм — 2",
+    "Овощная смесь заморож. — 800 г","Брокколи заморож. — 800 г","Стручковая фасоль заморож. — 400 г",
+    "Соевый + устричный соус, рисовый уксус, томат. паста, крахмал, мёд, кунжут, кунжутное масло, масло",
+    "Специи: паприка, кумин, карри/гарам масала, куркума, орегано, чили молотый + сушёный",
+    "Орехи грецкие/кешью — 200 г (⚠️ без миндаля)","Нори — 1 уп","Марин. огурцы — 1 б",
+    "Газировка zero / минералка — на неделю"
+  ]],
+  ["🥬 Купить свежим (докупка ~в среду)",[
+    "Свежий базилик — 1 пучок (для вторника)","Помидоры — 4","Огурцы — 4",
+    "Салатная зелень — 1 уп","Зелёный лук — 1 пучок","Фета/оливки — по желанию",
+    "Яблоки — 6","Бананы — 5 (частями)","Ягоды заморож. — 300 г"
+  ]],
+  ["🔪 Заготовить сегодня (Сб, ~1 ч)",[
+    "Запечь курицу-базу ~1,3 кг (без соусов), разложить по контейнерам",
+    "Сварить большую кастрюлю риса (4–5 порций)",
+    "Запечь нут на снеки (200°C, 25–30 мин)","Нарезать овощи-палочки в контейнер",
+    "Говядину и лишнюю курицу (~1,2 кг) — в морозилку"
+  ]],
+  ["⏭ Заготовить потом",[
+    "Каждый вечер Вс–Сб: база → блюдо дня за 15 мин, 2 порции (ужин + обед назавтра)",
+    "Среда: докупка свежего + пожарить 2-ю партию курицы ~1,2 кг (Чт фахитас, Сб шаурма)",
+    "Четверг вечер: переложить говядину из морозилки в холодильник (под пятничный булгоги)"
+  ]]
+];
+function renderShop(){
+  const checked=LS.get("shopChecked",{});
+  let total=0,done=0;
+  const html=SHOP.map(([grp,items])=>{
+    return `<div class="grp">${grp}</div>`+items.map(it=>{
+      total++; const on=!!checked[it]; if(on)done++;
+      const idA="s"+btoa(unescape(encodeURIComponent(it))).replace(/[^a-z0-9]/gi,'').slice(0,24);
+      return `<div class="chk ${on?'done':''}">
+        <input type="checkbox" id="${idA}" ${on?'checked':''} onchange="toggleShop(this,${JSON.stringify(it).replace(/"/g,'&quot;')})">
+        <label for="${idA}">${it}</label></div>`;
+    }).join("");
+  }).join("");
+  document.getElementById("shopList").innerHTML=html;
+  document.getElementById("shopProg").textContent=`${done} / ${total} отмечено`;
+}
+window.toggleShop=(el,item)=>{
+  const checked=LS.get("shopChecked",{});
+  if(el.checked) checked[item]=1; else delete checked[item];
+  LS.set("shopChecked",checked);
+  el.closest(".chk").classList.toggle("done",el.checked);
+  const total=SHOP.reduce((s,[,i])=>s+i.length,0);
+  const done=Object.keys(checked).length;
+  document.getElementById("shopProg").textContent=`${done} / ${total} отмечено`;
+};
+document.getElementById("shopReset").onclick=()=>{ LS.set("shopChecked",{}); renderShop(); };
+
+/* ---------------- INIT ---------------- */
+let _started=false;
+function startApp(){ if(_started) return; _started=true; initFilters(); renderRecipes(); }
+function bootstrap(){
+  if(IN_TG){ try{ TG.ready(); TG.expand(); }catch(e){} }
+  if(CS && CS.getKeys){
+    setTimeout(startApp, 2000);   // страховка: не ждём облако вечно
+    CS.getKeys((err,keys)=>{
+      if(err || !keys || !keys.length){ startApp(); return; }
+      CS.getItems(keys,(e2,vals)=>{
+        if(!e2 && vals){ Object.keys(vals).forEach(k=>{ if(vals[k]!=null && vals[k]!=="") localStorage.setItem(k,vals[k]); }); }
+        meta = LS.get("recipeMeta",{});
+        customs = LS.get("customRecipes",[]);
+        startApp();
+      });
+    });
+  } else { startApp(); }
+}
+bootstrap();
+</script>
+</body>
+</html>
